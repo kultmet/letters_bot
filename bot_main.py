@@ -15,7 +15,7 @@ from aiogram.types import ReplyKeyboardRemove
 from dotenv import load_dotenv
 
 from constants import *
-from api import get_letter, get_skills, get_letter2
+from api import get_letter, get_skills, get_letter2, recognize_req
 from buttons import letters
 # from buttons import calendar
 
@@ -31,6 +31,9 @@ class LetterInput(state.StatesGroup):
     company = state.State()
     position = state.State()
     interest = state.State()
+    requirements = state.State()
+
+class Requirements(state.StatesGroup):
     requirements = state.State()
 
 
@@ -59,6 +62,22 @@ async def reciver(message: types.Message, state: FSMContext, key: str, bot_answe
 async def start_letter(message: types.Message):
     await message.answer('Введите название компании', reply_markup=ReplyKeyboardRemove())
     await LetterInput.company.set()
+
+
+@dp.message_handler(commands=['recognize'])
+async def recognize_requirements(message: types.Message):
+    await message.answer('Внесите текст зависимостей.')
+    await Requirements.requirements.set()
+
+@dp.message_handler(state=Requirements.requirements)
+async def requirements_reciver(message: types.Message, state: FSMContext):
+    answer = message.text
+    response = await recognize_req({'text': answer})
+    result = ''
+    for line in response['filtered_data']:
+        result += f'{line}\n'
+    await message.answer(result)
+    await state.finish()
 
 
 @dp.message_handler(commands=['letter'])

@@ -20,11 +20,14 @@ async def get_skills(data: dict):
 
 #++++++NEW CONCEPTION+++++++++
 
-
+async def recognize_req(data: dict):
+    async with aiohttp.ClientSession(trust_env=True) as session:
+        async with session.post(f'{API_HOST}/recognize_req/', json={'text': data['text']}, ssl=False) as response:
+            return await response.json()
 
 async def get_letter2(data:dict):
     async with aiohttp.ClientSession(trust_env=True) as session:
-        async with session.post(f'{API_HOST}/recognize_req/', json={'text': data['requirements']}, ssl=False) as response:
+        async with session.post(f'{API_HOST}/split_req/', json={'text': data['requirements']}, ssl=False) as response:
             fuck = await response.json()
             data['requirements'] = fuck['filtered_data']
         async with session.post(f'{API_HOST}/cover_letters/', json=data, ssl=False) as response:
