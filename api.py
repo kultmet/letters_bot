@@ -47,6 +47,22 @@ async def get_letter2(data: dict):
             return await response.json()
 
 
+async def get_skills(endpoint):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            f'{API_HOST}/{endpoint}/'
+        ) as response:
+            return await response.json()
+
+
+async def add_skill(data: dict, endpoint):
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f'{API_HOST}/{endpoint}/', json=data
+        ) as response:
+            return await response.json()
+
+
 if __name__ == '__main__':
     #  print(asyncio.run(get_letter2({'company': 'Шарага',
     # 'position': 'разраб', 'interest': 'рокетам',

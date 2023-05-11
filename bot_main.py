@@ -10,7 +10,7 @@ from aiogram.types import ReplyKeyboardRemove
 from dotenv import load_dotenv
 
 from constants import *
-from api import get_letter2, recognize_req
+from api import get_letter2, recognize_req, get_skills, add_skill
 from buttons import letters
 # from buttons import calendar
 
@@ -31,6 +31,10 @@ class LetterInput(state.StatesGroup):
 
 class Requirements(state.StatesGroup):
     requirements = state.State()
+
+
+class SkillInput(state.StatesGroup):
+    skill = state.State()
 
 
 @dp.message_handler(commands=['start'])
@@ -148,6 +152,33 @@ async def requirements_reciver_and_finish(message: types.Message,
     letter_data = await get_letter2(data)
     await message.answer('fuck')
     await message.answer(text=letter_data.get('letter'))
+    await state.finish()
+
+
+@dp.message_handler(commands=['my_skills'])
+async def get_user_skills(message: types.Message):
+    bot_answer = await get_skills(USER_SKILL_ENDPOINT)
+    line_feed = '\n'
+    await message.answer(
+        (
+            '\tВаш стек:\n\n<code>'
+            f'{line_feed.join(bot_answer["user_skills"])}</code>'
+        ),
+        parse_mode='HTML'
+    )
+
+
+@dp.message_handler(commands=['add_my_skill'])
+async def add_user_skill(message: types.Message):
+    await message.answer('Внесите ваш навык.')
+    await SkillInput.skill.set()
+
+
+@dp.message_handler(state=SkillInput.skill)
+async def add_user_skill(message: types.Message, state: FSMContext):
+    user_answer = {'text': message.text}
+    server_answer = await add_skill(user_answer, USER_SKILL_ENDPOINT)
+    await message.answer(server_answer['message'])
     await state.finish()
 
 
