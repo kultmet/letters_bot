@@ -28,6 +28,7 @@ class LetterInput(state.StatesGroup):
     interest = state.State()
     requirements = state.State()
 
+
 class Requirements(state.StatesGroup):
     requirements = state.State()
 
@@ -36,13 +37,13 @@ class Requirements(state.StatesGroup):
 async def start(message: types.Message):
     await message.answer(
         (
-        f'Привет, {message.from_user.username}!!!\n'
-        f'Список доступных комманд {COMMANDS_OFFER}\n'
+            f'Привет, {message.from_user.username}!!!\n'
+            f'Список доступных комманд {COMMANDS_OFFER}\n'
         ),
         reply_markup=letters
     )
 
-# +++
+
 async def reciver(message: types.Message,
                   state: FSMContext,
                   key: str,
@@ -68,6 +69,7 @@ async def start_letter(message: types.Message):
 async def recognize_requirements(message: types.Message):
     await message.answer('Внесите текст зависимостей.')
     await Requirements.requirements.set()
+
 
 @dp.message_handler(state=Requirements.requirements)
 async def requirements_reciver(message: types.Message,
@@ -121,7 +123,8 @@ async def interest_reciver(message: types.Message, state: FSMContext):
     await reciver(message, state, 'interest', 'Добавте требования')
 
 # @dp.message_handler(state=LetterInput.requirements)
-# async def requirements_reciver_and_finish(message: types.Message, state: FSMContext):
+# async def requirements_reciver_and_finish(
+# message: types.Message, state: FSMContext):
 #     """Recive event description and_script_finish."""
 #     start = datetime.datetime.now()
 #     print(start)
@@ -134,6 +137,7 @@ async def interest_reciver(message: types.Message, state: FSMContext):
 #     print(stop)
 #     await message.answer(text=stop-start)
 #     await state.finish()
+
 
 @dp.message_handler(state=LetterInput.requirements)
 async def requirements_reciver_and_finish(message: types.Message,
