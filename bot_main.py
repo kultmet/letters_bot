@@ -1,10 +1,5 @@
 import logging
 import os
-import datetime
-
-
-import aiohttp
-from aiohttp.client import ContentTypeError
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher.filters import Text, state
@@ -15,7 +10,7 @@ from aiogram.types import ReplyKeyboardRemove
 from dotenv import load_dotenv
 
 from constants import *
-from api import get_letter, get_skills, get_letter2, recognize_req
+from api import get_letter2, recognize_req
 from buttons import letters
 # from buttons import calendar
 
@@ -48,7 +43,10 @@ async def start(message: types.Message):
     )
 
 # +++
-async def reciver(message: types.Message, state: FSMContext, key: str, bot_answer: str):
+async def reciver(message: types.Message,
+                  state: FSMContext,
+                  key: str,
+                  bot_answer: str):
     """
     Common function for reciving data and save data to StateGroup.
     Also invites you to take the next step.
@@ -60,7 +58,9 @@ async def reciver(message: types.Message, state: FSMContext, key: str, bot_answe
 
 
 async def start_letter(message: types.Message):
-    await message.answer('Введите название компании', reply_markup=ReplyKeyboardRemove())
+    await message.answer(
+        'Введите название компании', reply_markup=ReplyKeyboardRemove()
+    )
     await LetterInput.company.set()
 
 
@@ -70,7 +70,8 @@ async def recognize_requirements(message: types.Message):
     await Requirements.requirements.set()
 
 @dp.message_handler(state=Requirements.requirements)
-async def requirements_reciver(message: types.Message, state: FSMContext):
+async def requirements_reciver(message: types.Message,
+                               state: FSMContext):
     answer = message.text
     response = await recognize_req({'text': answer})
     result = ''
@@ -81,13 +82,15 @@ async def requirements_reciver(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(commands=['letter'])
-async def start_letter_writing_with_command(message: types.Message, state: FSMContext):
+async def start_letter_writing_with_command(message: types.Message,
+                                            state: FSMContext):
     """Stars script letter_writing with command."""
     await start_letter(message)
 
 
 @dp.message_handler(Text('Письмо'))
-async def start_letter_writing_with_button(message: types.Message, state: FSMContext):
+async def start_letter_writing_with_button(message: types.Message,
+                                           state: FSMContext):
     """Stars script letter_writing with button."""
     await start_letter(message)
 
@@ -95,20 +98,27 @@ async def start_letter_writing_with_button(message: types.Message, state: FSMCon
 @dp.message_handler(state=LetterInput.company)
 async def company_reciver(message: types.Message, state: FSMContext):
     """Нет."""
-    await reciver(message, state, 'company', 'Введите позицию, на которую притендуете')
+    await reciver(
+        message, state,
+        'company',
+        'Введите позицию, на которую притендуете'
+    )
 
 
 @dp.message_handler(state=LetterInput.position)
 async def position_reciver(message: types.Message, state: FSMContext):
     """Нет."""
-    await reciver(message, state, 'position', 'К чему у вас интерес в этой компании?')
+    await reciver(
+        message, state,
+        'position',
+        'К чему у вас интерес в этой компании?'
+    )
 
 
 @dp.message_handler(state=LetterInput.interest)
 async def interest_reciver(message: types.Message, state: FSMContext):
     """Recive event time and next step."""
     await reciver(message, state, 'interest', 'Добавте требования')
-
 
 # @dp.message_handler(state=LetterInput.requirements)
 # async def requirements_reciver_and_finish(message: types.Message, state: FSMContext):
@@ -125,10 +135,9 @@ async def interest_reciver(message: types.Message, state: FSMContext):
 #     await message.answer(text=stop-start)
 #     await state.finish()
 
-
-
 @dp.message_handler(state=LetterInput.requirements)
-async def requirements_reciver_and_finish(message: types.Message, state: FSMContext):
+async def requirements_reciver_and_finish(message: types.Message,
+                                          state: FSMContext):
     """Recive event description and_script_finish."""
     data = await state.get_data()
     data['requirements'] = message.text
