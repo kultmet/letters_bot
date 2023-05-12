@@ -47,5 +47,5 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        tags: kultmet/letters_bot:1.0
+        tags: kultmet/letters_bot:1.1
 

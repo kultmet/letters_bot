@@ -1,41 +1,13 @@
-import datetime
-
 import aiohttp
-import asyncio
+from aiohttp.client_exceptions import ClientConnectorError
 
 from constants import API_HOST
 
 
 async def get_letter(data: dict):
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            f'{API_HOST}/cover_letters/', json=data
-        ) as response:
-            return await response.json()
-
-
-async def get_skills(data: dict):
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            f'{API_HOST}/recognize_req/', json=data
-        ) as response:
-            return await response.json()
-
-
-async def recognize_req(data: dict):
     async with aiohttp.ClientSession(trust_env=True) as session:
         async with session.post(
-            f'{API_HOST}/recognize_req/',
-            json={'text': data['text']},
-            ssl=False
-        ) as response:
-            return await response.json()
-
-
-async def get_letter2(data: dict):
-    async with aiohttp.ClientSession(trust_env=True) as session:
-        async with session.post(
-            f'{API_HOST}/split_req/',
+            f'{API_HOST}/requirements/',
             json={'text': data['requirements']},
             ssl=False
         ) as response:
@@ -49,10 +21,13 @@ async def get_letter2(data: dict):
 
 async def get_skills(endpoint):
     async with aiohttp.ClientSession() as session:
-        async with session.get(
-            f'{API_HOST}/{endpoint}/'
-        ) as response:
-            return await response.json()
+        try:
+            async with session.get(
+                f'{API_HOST}/{endpoint}/'
+            ) as response:
+                return await response.json()
+        except ClientConnectorError:
+            pass
 
 
 async def add_skill(data: dict, endpoint):
@@ -61,40 +36,3 @@ async def add_skill(data: dict, endpoint):
             f'{API_HOST}/{endpoint}/', json=data
         ) as response:
             return await response.json()
-
-
-if __name__ == '__main__':
-    #  print(asyncio.run(get_letter2({'company': 'Шарага',
-    # 'position': 'разраб', 'interest': 'рокетам',
-    # 'requirements': 'PostgreSQL\nPython\nKafka\nDocker
-    # \nDjango Framework\nMongoDB\nRabbitMQ\nElasticsearch
-    # \nRedis\nCelery\nNginx',})))
-    # print(asyncio.run(get_skills({'text': 'PostgreSQL
-    # \nPython\nKafka\nDocker\nDjango Framework\nMongoDB\nRabbitMQ
-    # \nElasticsearch\nRedis\nCelery\nNginx',})))
-    start = datetime.datetime.now()
-    print(
-        asyncio.run(
-            get_letter(
-                {
-                    'company': 'Шарага',
-                    'position': 'разраб',
-                    'interest': 'рокетам',
-                    'requirements': [
-                        "Python",
-                        "Kafka",
-                        "Docker",
-                        "Django Framework",
-                        "MongoDB",
-                        "RabbitMQ",
-                        "Elasticsearch",
-                        "Redis",
-                        "Celery",
-                        "Nginx"
-                    ]
-                }
-            )
-        )
-    )
-    stop = datetime.datetime.now()
-    print(stop - start)

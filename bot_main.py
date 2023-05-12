@@ -9,10 +9,10 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.types import ReplyKeyboardRemove
 from dotenv import load_dotenv
 
-from constants import *
-from api import get_letter2, recognize_req, get_skills, add_skill
+from api import get_letter, get_skills, add_skill
 from buttons import letters
-# from buttons import calendar
+from constants import *
+import utils
 
 load_dotenv()
 
@@ -21,15 +21,13 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=os.getenv('TELEGRAM_TOKEN'))
 dp = Dispatcher(bot, storage=MemoryStorage())
 
+message_stack = utils.MessageStack()
+
 
 class LetterInput(state.StatesGroup):
     company = state.State()
     position = state.State()
     interest = state.State()
-    requirements = state.State()
-
-
-class Requirements(state.StatesGroup):
     requirements = state.State()
 
 
@@ -58,33 +56,19 @@ async def reciver(message: types.Message,
     """
     data = {key: message.text}
     await state.update_data(data=data)
-    await message.answer(text=bot_answer)
+    bot_message = await message.answer(text=bot_answer)
+    message_stack.push(bot_message.message_id)
+    message_stack.push(message.message_id)
     await LetterInput.next()
 
 
 async def start_letter(message: types.Message):
-    await message.answer(
+    """Вход в скрипт Написания письма."""
+    bot_message = await message.answer(
         'Введите название компании', reply_markup=ReplyKeyboardRemove()
     )
+    message_stack.push(bot_message.message_id)
     await LetterInput.company.set()
-
-
-@dp.message_handler(commands=['recognize'])
-async def recognize_requirements(message: types.Message):
-    await message.answer('Внесите текст зависимостей.')
-    await Requirements.requirements.set()
-
-
-@dp.message_handler(state=Requirements.requirements)
-async def requirements_reciver(message: types.Message,
-                               state: FSMContext):
-    answer = message.text
-    response = await recognize_req({'text': answer})
-    result = ''
-    for line in response['filtered_data']:
-        result += f'{line}\n'
-    await message.answer(result)
-    await state.finish()
 
 
 @dp.message_handler(commands=['letter'])
@@ -103,7 +87,7 @@ async def start_letter_writing_with_button(message: types.Message,
 
 @dp.message_handler(state=LetterInput.company)
 async def company_reciver(message: types.Message, state: FSMContext):
-    """Нет."""
+    """Принимает название компании."""
     await reciver(
         message, state,
         'company',
@@ -113,7 +97,7 @@ async def company_reciver(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state=LetterInput.position)
 async def position_reciver(message: types.Message, state: FSMContext):
-    """Нет."""
+    """Принимает желаемую позицию соискателя."""
     await reciver(
         message, state,
         'position',
@@ -123,63 +107,62 @@ async def position_reciver(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state=LetterInput.interest)
 async def interest_reciver(message: types.Message, state: FSMContext):
-    """Recive event time and next step."""
+    """Recive интерес and next step."""
     await reciver(message, state, 'interest', 'Добавте требования')
-
-# @dp.message_handler(state=LetterInput.requirements)
-# async def requirements_reciver_and_finish(
-# message: types.Message, state: FSMContext):
-#     """Recive event description and_script_finish."""
-#     start = datetime.datetime.now()
-#     print(start)
-#     requirements = await get_skills({'text': message.text})
-#     data = await state.get_data()
-#     data['requirements'] = requirements['filtered_data']
-#     letter_data = await get_letter(data)
-#     await message.answer(text=letter_data.get('letter'))
-#     stop = datetime.datetime.now()
-#     print(stop)
-#     await message.answer(text=stop-start)
-#     await state.finish()
 
 
 @dp.message_handler(state=LetterInput.requirements)
 async def requirements_reciver_and_finish(message: types.Message,
                                           state: FSMContext):
-    """Recive event description and_script_finish."""
+    """Recive Требования вакансии description and_script_finish."""
     data = await state.get_data()
     data['requirements'] = message.text
-    letter_data = await get_letter2(data)
-    await message.answer('fuck')
+    letter_data = await get_letter(data)
+    await message.answer(f'Для компании {data["company"]}')
     await message.answer(text=letter_data.get('letter'))
     await state.finish()
+    message_stack.push(message.message_id)
+    await delete_messages(message)
 
 
 @dp.message_handler(commands=['my_skills'])
 async def get_user_skills(message: types.Message):
+    """Дает все скиллы пользователя."""
     bot_answer = await get_skills(USER_SKILL_ENDPOINT)
     line_feed = '\n'
-    await message.answer(
+    bot_message = await message.answer(
         (
             '\tВаш стек:\n\n<code>'
             f'{line_feed.join(bot_answer["user_skills"])}</code>'
         ),
         parse_mode='HTML'
     )
+    message_stack.push(bot_message.message_id)
 
 
 @dp.message_handler(commands=['add_my_skill'])
 async def add_user_skill(message: types.Message):
+    """Интерфейс Добавления скилла в стэк пользователя."""
     await message.answer('Внесите ваш навык.')
     await SkillInput.skill.set()
 
 
 @dp.message_handler(state=SkillInput.skill)
-async def add_user_skill(message: types.Message, state: FSMContext):
+async def recive_user_skill(message: types.Message, state: FSMContext):
+    """Принимает текст скилла, и отправляет на сервер, через API."""
     user_answer = {'text': message.text}
     server_answer = await add_skill(user_answer, USER_SKILL_ENDPOINT)
     await message.answer(server_answer['message'])
     await state.finish()
+
+
+async def delete_messages(message: types.Message):
+    """Удалить сообщения из стека сообщений."""
+    while message_stack.length() != 0:
+        message_id = message_stack.pop()
+        await bot.delete_message(
+            chat_id=message.chat.id, message_id=message_id
+        )
 
 
 if __name__ == '__main__':
