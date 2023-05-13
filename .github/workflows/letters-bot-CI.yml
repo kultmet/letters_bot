@@ -66,4 +66,4 @@ jobs:
             # echo TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }} >> .env
             docker image rm -f kultmet/letters_bot:1.1
             sudo docker pull kultmet/letters_bot:1.1
-            docker run --env TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}--network=host --name letters_bot --rm -p 8080:8080 -d kultmet/letters_bot:1.1
+            docker run --env TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }} --network=host --name letters_bot --rm -p 8080:8080 -d kultmet/letters_bot:1.1
